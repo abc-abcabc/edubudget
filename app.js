@@ -822,10 +822,21 @@ async function login() {
     await signInWithPopup(auth, provider);
   } catch (err) {
     if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-      await signInWithRedirect(auth, provider);
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (redirectErr) {
+        alert(`로그인 리다이렉트 실패: ${redirectErr.code}\n${redirectErr.message}`);
+      }
     } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
       console.error(err);
-      toast(err.code === 'auth/unauthorized-domain' ? '이 도메인이 Firebase 승인 도메인에 등록되지 않았습니다' : `로그인에 실패했습니다 (${err.code || err.message})`);
+      let guide = `로그인 오류가 발생했습니다.\n\n[오류 코드]: ${err.code}\n[메시지]: ${err.message}\n\n`;
+      if (err.code === 'auth/unauthorized-domain') {
+        guide += `해결 방법: 현재 접속 중인 도메인("${window.location.hostname}")을 Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 추가해 주세요.`;
+      } else if (err.code === 'auth/operation-not-allowed') {
+        guide += `해결 방법: Firebase 콘솔 → Authentication → 로그인 방법 탭에서 "Google"을 [사용 설정]으로 켜고 저장해 주세요.`;
+      }
+      alert(guide);
+      toast(err.code);
     }
   }
 }
