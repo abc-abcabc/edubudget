@@ -1,10 +1,10 @@
-// Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹) → SDK 설정 및 구성 의 값을 붙여넣으세요.
-// (웹 설정값은 공개되어도 괜찮습니다. 데이터 보호는 Firestore 보안 규칙이 담당합니다.)
+// Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹) SDK 설정
 export const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT.firebaseapp.com',
-  projectId: 'YOUR_PROJECT',
-  storageBucket: 'YOUR_PROJECT.appspot.com',
-  messagingSenderId: '000000000000',
-  appId: 'YOUR_APP_ID',
+  apiKey: "AIzaSyCMLAiGEDehF8_Q70tggvgwFqhjFWTnhv8",
+  authDomain: "first-app-75a15.firebaseapp.com",
+  projectId: "first-app-75a15",
+  storageBucket: "first-app-75a15.firebasestorage.app",
+  messagingSenderId: "595692929185",
+  appId: "1:595692929185:web:7ac10829b5623059ecb0e0",
+  measurementId: "G-5NFENZYRMZ"
 };
