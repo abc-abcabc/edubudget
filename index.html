@@ -20,6 +20,8 @@
 <body data-screen="loading">
   <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
 
+  <button id="btn-theme-floating" class="theme-toggle-floating" title="테마 전환 (다크/라이트)" aria-label="테마 전환">🌙</button>
+
   <div class="screen-loading"><div class="spinner"></div><p>불러오는 중…</p></div>
 
   <section class="screen-auth">
@@ -44,10 +46,11 @@
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <div class="logo">₩</div>
-        <div>
+        <div class="brand-text">
           <strong>EduBudget</strong>
           <small>연구회 운영비 관리</small>
         </div>
+        <button id="btn-theme-sidebar" class="icon-btn theme-toggle" title="테마 전환 (다크/라이트)" aria-label="테마 전환">🌙</button>
       </div>
 
       <button id="btn-add-group" class="btn btn-primary btn-block">＋ 연구회 추가</button>

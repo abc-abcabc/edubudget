@@ -753,7 +753,41 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+/* ---------- theme (dark / light) ---------- */
+const THEME_KEY = 'edubudget.theme';
+
+function getInitialTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem(THEME_KEY, theme);
+  // 현재 테마에 따라 전환될 모드의 아이콘을 표시 (라이트 모드면 🌙, 다크 모드면 ☀️)
+  const icon = theme === 'light' ? '🌙' : '☀️';
+  const label = theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환';
+  ['#btn-theme-floating', '#btn-theme-sidebar'].forEach(sel => {
+    const btn = $(sel);
+    if (btn) {
+      btn.textContent = icon;
+      btn.title = label;
+      btn.setAttribute('aria-label', label);
+    }
+  });
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.dataset.theme || 'dark';
+  applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+}
+
+applyTheme(getInitialTheme());
+
 /* ---------- events ---------- */
+$('#btn-theme-floating')?.addEventListener('click', toggleTheme);
+$('#btn-theme-sidebar')?.addEventListener('click', toggleTheme);
 $('#btn-add-group').onclick = addGroup;
 $('#btn-export-json').onclick = exportJSON;
 $('#btn-import-json').onclick = () => $('#file-import').click();
