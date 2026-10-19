@@ -1,0 +1,13 @@
+{
+  "name": "EduBudget · 연구회 운영비 관리",
+  "short_name": "EduBudget",
+  "description": "연구회 운영비 예산, 사용 내역, 잔액 관리",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d17",
+  "theme_color": "#0b0d17",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

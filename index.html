@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduBudget · 연구회 운영비 관리</title>
+  <meta name="description" content="여러 연구회의 운영비 예산, 사용 내역, 잔액을 한눈에 관리하는 앱">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0b0d17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EduBudget">
+</head>
+<body data-screen="loading">
+  <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <div class="screen-loading"><div class="spinner"></div><p>불러오는 중…</p></div>
+
+  <section class="screen-auth">
+    <div class="auth-card">
+      <div class="logo auth-logo">₩</div>
+      <h1>EduBudget</h1>
+      <p class="auth-sub">연구회 운영비를 PC와 모바일에서<br>언제든 확인하고 기록하세요.</p>
+      <ul class="auth-feats">
+        <li>📊 항목별 예산·사용액·잔액 자동 계산</li>
+        <li>🗂 여러 연구회를 한 곳에서 관리</li>
+        <li>☁️ 클라우드 저장 · 기기 간 실시간 동기화</li>
+      </ul>
+      <button id="btn-login" class="btn btn-google">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Google 계정으로 시작하기
+      </button>
+      <p class="auth-note">로그인한 본인만 자신의 데이터를 볼 수 있습니다.</p>
+    </div>
+  </section>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">₩</div>
+        <div>
+          <strong>EduBudget</strong>
+          <small>연구회 운영비 관리</small>
+        </div>
+      </div>
+
+      <button id="btn-add-group" class="btn btn-primary btn-block">＋ 연구회 추가</button>
+
+      <div class="side-label">연구회 목록</div>
+      <ul id="group-list" class="group-list"></ul>
+
+      <div class="side-footer">
+        <button id="btn-export-json" class="btn btn-ghost btn-sm" title="전체 데이터를 JSON 파일로 저장">⤓ 백업</button>
+        <button id="btn-import-json" class="btn btn-ghost btn-sm" title="백업 파일에서 복원">⤒ 복원</button>
+        <input type="file" id="file-import" accept="application/json,.json" hidden>
+      </div>
+      <div id="user-box" class="user-box"></div>
+    </aside>
+
+    <main id="main" class="main"></main>
+  </div>
+
+  <div id="modal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <header class="modal-head">
+        <h3 id="modal-title"></h3>
+        <button type="button" class="icon-btn" id="modal-close" aria-label="닫기">✕</button>
+      </header>
+      <form id="modal-form" autocomplete="off">
+        <div id="modal-body" class="modal-body"></div>
+        <footer class="modal-foot">
+          <button type="button" class="btn btn-ghost" id="modal-cancel">취소</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit">저장</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
