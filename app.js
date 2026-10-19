@@ -6,6 +6,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut,
+  deleteUser, reauthenticateWithPopup,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
@@ -393,9 +394,11 @@ function renderExpensesCard(g, s) {
 /* ---------- modal ---------- */
 let modalSubmit = null;
 
-function openModal({ title, body, submitText = '저장', danger = false, onSubmit, onOpen }) {
+function openModal({ title, body, submitText = '저장', danger = false, onSubmit, onOpen, hideFooter = false }) {
   $('#modal-title').textContent = title;
   $('#modal-body').innerHTML = body;
+  const foot = $('.modal-foot');
+  if (foot) foot.style.display = hideFooter ? 'none' : '';
   const btn = $('#modal-submit');
   btn.textContent = submitText;
   btn.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
@@ -409,6 +412,8 @@ function openModal({ title, body, submitText = '저장', danger = false, onSubmi
 function closeModal() {
   $('#modal').hidden = true;
   modalSubmit = null;
+  const foot = $('.modal-foot');
+  if (foot) foot.style.display = '';
 }
 
 function confirmModal(title, html, onOk, okText = '삭제') {
@@ -883,13 +888,203 @@ function renderUser() {
   $('#user-box').innerHTML = user ? `
     ${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<div class="avatar">${esc((user.displayName || user.email || '?')[0])}</div>`}
     <div class="ub-text"><b>${esc(user.displayName || '사용자')}</b><small>${esc(user.email || '')}</small></div>
+    <button class="icon-btn" id="btn-user-settings" title="계정 관리 및 삭제" aria-label="계정 관리">⚙️</button>
     <button class="icon-btn" id="btn-logout" title="로그아웃" aria-label="로그아웃">⎋</button>` : '';
+}
+
+async function handleLogout(forceGoogleLogout = false) {
+  try {
+    await signOut(auth);
+    state.groups = [];
+    state.selectedId = null;
+    localStorage.removeItem(SEL_KEY);
+    if (forceGoogleLogout) {
+      toast('Google 계정에서 완전히 로그아웃합니다…');
+      // Google 세션을 완전히 종료하여 다음 로그인 시 무조건 비밀번호를 묻도록 함
+      setTimeout(() => {
+        const returnUrl = window.location.origin + window.location.pathname;
+        window.location.href = `https://accounts.google.com/Logout?continue=${encodeURIComponent(returnUrl)}`;
+      }, 500);
+    } else {
+      toast('로그아웃되었습니다');
+    }
+  } catch (err) {
+    console.error(err);
+    toast('로그아웃 중 오류가 발생했습니다');
+  }
+}
+
+function showLogoutModal() {
+  openModal({
+    title: '로그아웃',
+    body: `
+      <div class="security-alert-box">
+        <div class="sab-icon">🛡️</div>
+        <div class="sab-text">
+          <strong>공용 PC(교무실·학교) 보안 권장</strong>
+          <p>구글 계정 세션이 브라우저에 남아있으면 다른 사용자가 비밀번호 없이 바로 접속할 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="radio-cards" style="margin-top:8px">
+        <label class="radio-card">
+          <input type="radio" name="logoutType" value="google" checked>
+          <div>
+            <b>🔒 공용 PC 완전 로그아웃 (강력 권장)</b>
+            <span>Google 계정 세션을 완전히 종료합니다. 다음 접속 시 <strong>반드시 Google 비밀번호를 다시 입력</strong>해야 합니다.</span>
+          </div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="logoutType" value="app">
+          <div>
+            <b>📱 이 기기에서만 로그아웃</b>
+            <span>개인 전용 기기용. Google 로그인은 유지하고 EduBudget 앱만 로그아웃합니다.</span>
+          </div>
+        </label>
+      </div>
+    `,
+    submitText: '로그아웃',
+    danger: true,
+    onSubmit: d => {
+      handleLogout(d.logoutType === 'google');
+    }
+  });
+}
+
+function showAccountModal() {
+  if (!user) return;
+  const groupCount = state.groups.length;
+  const expenseCount = sum(state.groups.map(g => (g.expenses || []).length));
+
+  openModal({
+    title: '내 계정 관리',
+    body: `
+      <div class="account-card-box">
+        ${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<div class="avatar">${esc((user.displayName || user.email || '?')[0])}</div>`}
+        <div class="ac-info">
+          <b>${esc(user.displayName || '사용자')}</b>
+          <small>${esc(user.email || '')}</small>
+        </div>
+      </div>
+
+      <div class="account-stats-row">
+        <div class="account-stat-pill">
+          <div class="asp-label">관리 중인 연구회</div>
+          <div class="asp-val">${groupCount}개</div>
+        </div>
+        <div class="account-stat-pill">
+          <div class="asp-label">기록된 지출 내역</div>
+          <div class="asp-val">${expenseCount}건</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button type="button" class="btn btn-block" id="btn-modal-logout">⎋ 로그아웃</button>
+      </div>
+
+      <div class="danger-zone">
+        <div class="danger-zone-title">⚠️ 계정 삭제 (회원 탈퇴)</div>
+        <div class="danger-zone-desc">계정을 삭제하면 Firestore 클라우드에 보관된 모든 연구회와 지출 내역이 영구히 삭제되며 즉시 복구할 수 없습니다.</div>
+        <button type="button" class="btn btn-danger btn-block" id="btn-start-delete-account">계정 및 전체 데이터 영구 삭제</button>
+      </div>
+    `,
+    hideFooter: true,
+    onOpen: el => {
+      $('#btn-modal-logout', el).onclick = () => {
+        closeModal();
+        showLogoutModal();
+      };
+      $('#btn-start-delete-account', el).onclick = () => {
+        closeModal();
+        showDeleteAccountModal();
+      };
+    }
+  });
+}
+
+function showDeleteAccountModal() {
+  if (!user) return;
+  const groupCount = state.groups.length;
+  const expenseCount = sum(state.groups.map(g => (g.expenses || []).length));
+
+  openModal({
+    title: '계정 및 전체 데이터 영구 삭제',
+    body: `
+      <div class="security-alert-box danger">
+        <div class="sab-icon">⚠️</div>
+        <div class="sab-text">
+          <strong>이 작업은 절대로 되돌릴 수 없습니다!</strong>
+          <p>현재 계정(<b>${esc(user.email)}</b>)에 등록된 모든 연구회 <b>${groupCount}개</b>와 지출 내역 <b>${expenseCount}건</b>이 Firestore 클라우드에서 영구적으로 삭제되며, 로그인 계정도 완전히 탈퇴 처리됩니다.</p>
+        </div>
+      </div>
+      <p class="confirm-text" style="font-size:13px;margin-top:6px">
+        계속 진행하시려면 안전 확인을 위해 아래에 <b>계정삭제</b>를 정확히 입력해 주세요.
+      </p>
+      <div class="field">
+        <input class="input" id="confirm-delete-input" name="confirmText" required placeholder="계정삭제" autocomplete="off">
+      </div>
+    `,
+    submitText: '영구 삭제 진행',
+    danger: true,
+    onSubmit: async d => {
+      if ((d.confirmText || '').trim() !== '계정삭제') {
+        alert("확인 단어 '계정삭제'를 정확히 입력해 주세요.");
+        return false;
+      }
+      await deleteAccountProcess();
+    }
+  });
+}
+
+async function deleteAccountProcess() {
+  setScreen('loading');
+  try {
+    // 1. Firestore 사용자 데이터 삭제
+    const snap = await getDocs(groupsCol());
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    // 2. Auth 계정 삭제
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        await deleteUser(currentUser);
+      } catch (delErr) {
+        if (delErr.code === 'auth/requires-recent-login') {
+          // 보안상 최근 로그인이 필요할 때 재인증 팝업 호출 후 삭제
+          toast('보안 확인을 위해 Google 재인증을 진행합니다…');
+          await reauthenticateWithPopup(currentUser, provider);
+          await deleteUser(currentUser);
+        } else {
+          throw delErr;
+        }
+      }
+    }
+
+    // 3. 로컬 상태 초기화
+    state.groups = [];
+    state.selectedId = null;
+    localStorage.removeItem(SEL_KEY);
+    user = null;
+
+    alert('계정과 모든 연구회 데이터가 완전히 삭제되었습니다.\n보안을 위해 Google 계정 세션도 완전히 종료합니다.');
+    const returnUrl = window.location.origin + window.location.pathname;
+    window.location.href = `https://accounts.google.com/Logout?continue=${encodeURIComponent(returnUrl)}`;
+  } catch (err) {
+    console.error(err);
+    setScreen('app');
+    alert(`계정 삭제 중 오류가 발생했습니다: ${err.message || err.code}`);
+  }
 }
 
 $('#btn-login').onclick = login;
 $('#user-box').addEventListener('click', e => {
   if (e.target.closest('#btn-logout')) {
-    confirmModal('로그아웃', '로그아웃 할까요?', () => signOut(auth), '로그아웃');
+    showLogoutModal();
+  } else if (e.target.closest('#btn-user-settings')) {
+    showAccountModal();
   }
 });
 
